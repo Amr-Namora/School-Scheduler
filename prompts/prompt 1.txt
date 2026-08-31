@@ -1,0 +1,29 @@
+Build the SchoolScheduler.Domain project.
+
+Create entities (as plain C# classes/records, no EF or MediatR references):
+- School (Id, Name, WorkingDaysPerWeek, LecturesPerDay)
+- LectureSlot (Id, SchoolId, DayOfWeek, SlotNumber, StartTime, EndTime) — represents
+  one lecture period in the school's week
+- BreakSlot (Id, SchoolId, DayOfWeek, AfterSlotNumber, StartTime, EndTime)
+- GradeCategory enum: Primary, Intermediate, Secondary
+- Grade (Id, SchoolId, Category (GradeCategory), Level (int, e.g. 1-6 or 1-3))
+- ClassRoom (Id, SchoolId, GradeId, Name) — represents a "class/section" like
+  "Secondary 1 - Class 2"
+- Subject (Id, SchoolId, Name)
+- Teacher (Id, SchoolId, Name)
+- TeacherSubject (TeacherId, SubjectId) — many-to-many join
+- TeacherAvailability (Id, TeacherId, DayOfWeek, SlotNumber) — one row per
+  available slot for that teacher
+- ClassSubjectAssignment (Id, ClassRoomId, SubjectId, TeacherId, WeeklyQuota int)
+  — "this class needs this subject taught by this teacher N times/week"
+- TimetableEntry (Id, ClassRoomId, SubjectId, TeacherId, DayOfWeek, SlotNumber)
+  — one generated cell in the final timetable
+
+Use enums where sensible (e.g. DayOfWeek limited to the school's working days).
+Keep entities free of any persistence or solver concerns — pure domain model.
+Add basic invariant checks in constructors/factory methods where obviously useful
+(e.g. WeeklyQuota must be > 0), but don't over-engineer validation here —
+detailed validation belongs in the Application layer.
+
+After generating, list the files you created and a one-paragraph summary of
+any modeling decisions you made that weren't explicitly specified above.

@@ -1,0 +1,34 @@
+Build the SchoolScheduler.Application project on top of the existing Domain
+project. Use MediatR for CQRS and FluentValidation for input validation.
+
+COMMANDS (write operations), each with a Command class, Handler, and Validator:
+- CreateSchool, ConfigureWorkWeek (days/week, lecture times, break times)
+- CreateGrade, CreateClassRoom
+- CreateSubject
+- CreateTeacher, AssignSubjectsToTeacher, SetTeacherAvailability
+- CreateClassSubjectAssignment (class + subject + teacher + weekly quota)
+- GenerateTimetable (School Id, or ClassRoom Id) — triggers the solver
+
+QUERIES (read operations):
+- GetClassTimetable(classRoomId) -> day x slot grid of subject+teacher
+- GetTeacherTimetable(teacherId) -> day x slot grid of class+subject+school
+  (a teacher may work at multiple schools, so include school name per entry)
+- GetSchoolSetupStatus(schoolId) -> what onboarding steps are complete/missing
+
+INTERFACES to define here (implemented later in Infrastructure):
+- ITimetableGenerationService — takes a school/class's full configuration
+  (classes, teachers, subjects, availability, assignments, constraints) and
+  returns a generated timetable or a clear failure reason if no valid
+  timetable exists (e.g. "Teacher X's availability makes their weekly quota
+  impossible to satisfy").
+- IApplicationDbContext or repository interfaces as needed for the handlers
+  (keep persistence abstracted — no EF Core references in this project).
+
+Add FluentValidation validators enforcing things like: weekly quota can't
+exceed the number of available slots for that teacher; a class shouldn't
+have two ClassSubjectAssignments for the same subject with different
+teachers unless that's intentionally supported (flag this to me if
+ambiguous rather than guessing).
+
+After generating, list the files created and flag any business rule you
+had to make an assumption about.

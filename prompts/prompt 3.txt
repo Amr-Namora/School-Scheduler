@@ -1,0 +1,36 @@
+Build the SchoolScheduler.Infrastructure project, implementing the
+interfaces defined in Application.
+
+PERSISTENCE:
+- EF Core DbContext with DbSets for all Domain entities
+- Fluent API configurations (OnModelCreating) for relationships and keys
+- Global query filter on every tenant-scoped entity so all queries are
+  automatically scoped to SchoolId == current school (use an
+  ICurrentSchoolContext service, injected, that Api layer will populate
+  from the authenticated user/tenant)
+- EF Core migrations setup
+
+SCHEDULING SOLVER (this is the core of the project):
+- Implement ITimetableGenerationService using the Google.OrTools NuGet
+  package's CP-SAT solver.
+- Model each (ClassRoom, Day, Slot) as a decision variable domain over
+  possible (Subject, Teacher) pairs, constrained to:
+  1. HardConstraint: teacher not double-booked at same (Day, Slot) across
+     all classes they're assigned to
+  2. HardConstraint: teacher only assigned within their declared
+     TeacherAvailability
+  3. HardConstraint: sum of a subject's occurrences per class per week
+     equals its WeeklyQuota exactly
+  4. HardConstraint: a subject appears at most 2 times per day per class
+  5. HardConstraint: no teacher has 3+ consecutive slots (same day) with
+     no break between them — model this as a sliding window constraint
+     over consecutive slot numbers
+  - If the solver finds the problem infeasible, return a result object
+    that explains which constraint category likely caused it (as far as
+    OR-Tools' infeasibility info allows), not just "failed."
+  - Keep the solver logic in its own well-named class(es), separate from
+    EF Core code, so it stays testable in isolation.
+
+Explain briefly, after generating, how you modeled the CP-SAT variables
+and constraints (2-3 sentences), so I can sanity-check the approach before
+we move to the API layer.
