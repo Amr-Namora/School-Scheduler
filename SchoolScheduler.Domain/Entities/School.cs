@@ -17,4 +17,13 @@ public class School
         Name = name;
         LecturesPerDay = lecturesPerDay;
     }
+
+    public void Update(string name, int lecturesPerDay)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("School name is required.");
+        if (lecturesPerDay < 1) throw new ArgumentException("Lectures per day must be at least 1.");
+
+        Name = name;
+        LecturesPerDay = lecturesPerDay;
+    }
 }

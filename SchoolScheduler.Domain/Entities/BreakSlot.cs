@@ -24,4 +24,14 @@ public class BreakSlot
         StartTime = startTime;
         EndTime = endTime;
     }
+
+    public void Update(int afterSlotNumber, TimeSpan startTime, TimeSpan endTime)
+    {
+        if (afterSlotNumber < 1) throw new ArgumentException("AfterSlotNumber must be positive.");
+        if (startTime >= endTime) throw new ArgumentException("Start time must be before end time.");
+
+        AfterSlotNumber = afterSlotNumber;
+        StartTime = startTime;
+        EndTime = endTime;
+    }
 }

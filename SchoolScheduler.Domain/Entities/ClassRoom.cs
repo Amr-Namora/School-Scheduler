@@ -18,4 +18,10 @@ public class ClassRoom
         GradeId = gradeId;
         Name = name;
     }
+
+    public void Update(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Class room name is required.");
+        Name = name;
+    }
 }

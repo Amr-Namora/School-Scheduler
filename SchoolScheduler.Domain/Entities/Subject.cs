@@ -16,4 +16,10 @@ public class Subject
         SchoolId = schoolId;
         Name = name;
     }
+
+    public void Update(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Subject name is required.");
+        Name = name;
+    }
 }

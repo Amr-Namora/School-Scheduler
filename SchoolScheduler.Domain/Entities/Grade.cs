@@ -19,4 +19,12 @@ public class Grade
         Category = category;
         Level = level;
     }
+
+    public void Update(GradeCategory category, int level)
+    {
+        if (level < 1) throw new ArgumentException("Grade level must be positive.");
+
+        Category = category;
+        Level = level;
+    }
 }

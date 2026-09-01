@@ -19,5 +19,11 @@ public class ClassSubjectAssignment
         SubjectId = subjectId;
         TeacherId = teacherId;
         WeeklyQuota = weeklyQuota;
+    public void Update(Guid teacherId, Guid subjectId, int weeklyQuota)
+    {
+        if (weeklyQuota < 1) throw new ArgumentException("Weekly quota must be greater than zero.");
+        TeacherId = teacherId;
+        SubjectId = subjectId;
+        WeeklyQuota = weeklyQuota;
     }
-}
+

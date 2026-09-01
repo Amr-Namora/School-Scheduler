@@ -24,4 +24,14 @@ public class LectureSlot
         StartTime = startTime;
         EndTime = endTime;
     }
+
+    public void Update(int slotNumber, TimeSpan startTime, TimeSpan endTime)
+    {
+        if (slotNumber < 1) throw new ArgumentException("Slot number must be positive.");
+        if (startTime >= endTime) throw new ArgumentException("Start time must be before end time.");
+
+        SlotNumber = slotNumber;
+        StartTime = startTime;
+        EndTime = endTime;
+    }
 }
