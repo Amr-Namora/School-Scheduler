@@ -1,15 +1,15 @@
 using FluentValidation;
-using SchoolScheduler.Application.Schools.Commands.DeleteSchool;
+using SchoolScheduler.Application.Schools.Commands.SoftDeleteSchool;
 using SchoolScheduler.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace SchoolScheduler.Application.Schools.Commands.DeleteSchool;
+namespace SchoolScheduler.Application.Schools.Commands.SoftDeleteSchool;
 
-public class DeleteSchoolCommandValidator : AbstractValidator<DeleteSchoolCommand>
+public class SoftDeleteSchoolCommandValidator : AbstractValidator<SoftDeleteSchoolCommand>
 {
-    public DeleteSchoolCommandValidator(IApplicationDbContext context)
+    public SoftDeleteSchoolCommandValidator(IApplicationDbContext context)
     {
         RuleFor(x => x.SchoolId).NotEmpty();
 

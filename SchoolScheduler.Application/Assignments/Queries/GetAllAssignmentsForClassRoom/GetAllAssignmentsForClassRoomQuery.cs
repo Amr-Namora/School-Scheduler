@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SchoolScheduler.Application.Assignments.Queries.GetAllAssignmentsForClassRoom;
 
-public record GetAllAssignmentsForClassRoomQuery(Guid ClassRoomId) : IRequest<List<ClassSubjectAssignmentDto>>;
+public record GetAllAssignmentsForClassRoomQuery(Guid SchoolId, Guid ClassRoomId) : IRequest<List<ClassSubjectAssignmentDto>>;
 
 public class GetAllAssignmentsForClassRoomQueryHandler : IRequestHandler<GetAllAssignmentsForClassRoomQuery, List<ClassSubjectAssignmentDto>>
 {
@@ -23,6 +23,15 @@ public class GetAllAssignmentsForClassRoomQueryHandler : IRequestHandler<GetAllA
 
     public async Task<List<ClassSubjectAssignmentDto>> Handle(GetAllAssignmentsForClassRoomQuery request, CancellationToken cancellationToken)
     {
+        // Ensure the classroom belongs to the school
+        var classroomExists = await _context.ClassRooms
+            .AnyAsync(c => c.Id == request.ClassRoomId && c.SchoolId == request.SchoolId, cancellationToken);
+
+        if (!classroomExists)
+        {
+            throw new InvalidOperationException("Class room not found.");
+        }
+
         return await _context.ClassSubjectAssignments
             .Where(a => a.ClassRoomId == request.ClassRoomId)
             .Select(a => new ClassSubjectAssignmentDto(

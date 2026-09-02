@@ -18,6 +18,7 @@ public interface IApplicationDbContext
     DbSet<BreakSlot> BreakSlots { get; }
     DbSet<TeacherAvailability> TeacherAvailabilities { get; }
     DbSet<TimetableEntry> TimetableEntries { get; }
+    DbSet<TeacherLinkRequest> TeacherLinkRequests { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

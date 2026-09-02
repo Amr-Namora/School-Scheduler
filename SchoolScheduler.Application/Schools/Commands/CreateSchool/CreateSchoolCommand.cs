@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace SchoolScheduler.Application.Schools.Commands.CreateSchool;
 
-public record CreateSchoolCommand(string Name, int LecturesPerDay) : IRequest<Guid>;
+public record CreateSchoolCommand(string Name, string UserId, int LecturesPerDay) : IRequest<Guid>;
 
 public class CreateSchoolCommandHandler : IRequestHandler<CreateSchoolCommand, Guid>
 {
@@ -20,7 +20,7 @@ public class CreateSchoolCommandHandler : IRequestHandler<CreateSchoolCommand, G
 
     public async Task<Guid> Handle(CreateSchoolCommand request, CancellationToken cancellationToken)
     {
-        var school = new School(Guid.NewGuid(), request.Name, request.LecturesPerDay);
+        var school = new School(Guid.NewGuid(), request.Name, request.UserId, request.LecturesPerDay);
         _context.Schools.Add(school);
         await _context.SaveChangesAsync(cancellationToken);
         return school.Id;

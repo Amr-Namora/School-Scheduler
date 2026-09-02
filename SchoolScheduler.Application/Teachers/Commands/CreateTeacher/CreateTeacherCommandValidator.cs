@@ -8,6 +8,7 @@ public class CreateTeacherCommandValidator : AbstractValidator<CreateTeacherComm
     public CreateTeacherCommandValidator()
     {
         RuleFor(x => x.SchoolId).NotEmpty();
-        RuleFor(x => x.Name).NotEmpty().WithMessage("Teacher name is required.");
+        RuleFor(x => x.DisplayName).NotEmpty().WithMessage("Teacher display name is required.");
+        RuleFor(x => x.Email).NotEmpty().EmailAddress().WithMessage("A valid teacher email is required.");
     }
 }

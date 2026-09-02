@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SchoolScheduler.Application.Teachers.Queries.GetAvailabilityForTeacher;
 
-public record GetAvailabilityForTeacherQuery(Guid TeacherId) : IRequest<List<TeacherAvailabilityByDayDto>>;
+public record GetAvailabilityForTeacherQuery(Guid SchoolId, Guid TeacherId) : IRequest<List<TeacherAvailabilityByDayDto>>;
 
 public class GetAvailabilityForTeacherQueryHandler : IRequestHandler<GetAvailabilityForTeacherQuery, List<TeacherAvailabilityByDayDto>>
 {
@@ -23,6 +23,15 @@ public class GetAvailabilityForTeacherQueryHandler : IRequestHandler<GetAvailabi
 
     public async Task<List<TeacherAvailabilityByDayDto>> Handle(GetAvailabilityForTeacherQuery request, CancellationToken cancellationToken)
     {
+        // Ensure the teacher belongs to the school before returning availability
+        var teacherExists = await _context.Teachers
+            .AnyAsync(t => t.Id == request.TeacherId && t.SchoolId == request.SchoolId, cancellationToken);
+
+        if (!teacherExists)
+        {
+            throw new InvalidOperationException("Teacher not found.");
+        }
+
         var availabilities = await _context.TeacherAvailabilities
             .Where(a => a.TeacherId == request.TeacherId)
             .ToListAsync(cancellationToken);

@@ -1,22 +1,54 @@
 Build the SchoolScheduler.Api project, wiring up Domain + Application +
 Infrastructure.
 
-- Controllers (or minimal API endpoints) for every Command/Query defined
-  in Application: school setup/onboarding endpoints, teacher/availability
-  endpoints, class/assignment endpoints, GenerateTimetable, and the two
-  read endpoints (class timetable, teacher timetable).
-- Authentication/authorization: each authenticated principal belongs to
-  either a School (admin), a Teacher, or a Student tied to a ClassRoom.
-  Implement ICurrentSchoolContext (from Infrastructure) so tenant scoping
-  works automatically. Use ASP.NET Core Identity with JWT — same pattern
-  as our earlier DLMS project if you're already familiar with it.
-- DI composition: wire MediatR, FluentValidation, AutoMapper, DbContext,
-  and the OR-Tools solver service in Program.cs.
-- Swagger/OpenAPI enabled for manual testing.
-- DTOs/response shapes: class timetable and teacher timetable responses
-  should return a clean day-by-slot grid structure (not raw entities),
-  and the teacher timetable response must include the School name/id per
-  entry since a teacher can work at multiple schools.
+AUTH ENDPOINTS:
+- POST /auth/school/signup — creates an ApplicationUser (Identity) with
+  the given email/password, then calls CreateSchoolCommand with the new
+  user's id, returning a JWT.
+- POST /auth/teacher/signup — creates an ApplicationUser with FullName,
+  email/password, then calls CreateLinkRequestsForNewUserCommand with
+  the new user's id and email to auto-create any pending link requests
+  from schools that already have a matching Teacher shell record.
+  Returns a JWT.
+- POST /auth/login — standard Identity login, returns a JWT with claims
+  for UserId and Role (School or Teacher; add Student later if/when that
+  role is built).
+
+LINK REQUEST ENDPOINTS (teacher-facing):
+- GET /teacher/link-requests — pending requests for the current user
+  (GetPendingLinkRequestsForUserQuery)
+- POST /teacher/link-requests/{id}/accept
+- POST /teacher/link-requests/{id}/decline
+
+STANDARD ENDPOINTS:
+- Controllers (or minimal API endpoints) for every remaining
+  Command/Query defined in Application: school setup endpoints,
+  grade/classroom/subject endpoints, teacher/availability endpoints,
+  class/assignment endpoints, GenerateTimetable, and the two timetable
+  read endpoints. Use SoftDeleteSchoolCommand (not a hard delete) for the
+  school delete endpoint.
+
+TENANT SCOPING:
+- Implement ICurrentSchoolContext (interface from Infrastructure) reading
+  the authenticated user's id from JWT claims and resolving SchoolId via
+  School.UserId lookup, as described in the Infrastructure prompt.
+- For teacher-facing endpoints that aren't school-scoped (link requests,
+  GetTeacherTimetableQuery), use the authenticated UserId directly
+  instead of ICurrentSchoolContext.
+
+DI COMPOSITION:
+- Wire MediatR, FluentValidation, AutoMapper, both DbContexts, ASP.NET
+  Core Identity, JWT auth, and the OR-Tools solver service in Program.cs.
+
+Swagger/OpenAPI enabled for manual testing.
+
+DTOs/response shapes: class timetable and teacher timetable responses
+should return a clean day-by-slot grid structure (not raw entities), and
+the teacher timetable response must include the School name/id per entry
+since a teacher can work at multiple schools. Teacher-related responses
+(anywhere DisplayName is shown) should resolve the "effective name" — if
+UserId is set, use IUserLookupService.GetFullNameAsync(UserId); otherwise
+fall back to Teacher.DisplayName.
 
 After generating, list all endpoints created with their routes and HTTP
 methods, and confirm the project builds and Swagger comes up.

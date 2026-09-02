@@ -1,6 +1,7 @@
 using MediatR;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
+using SchoolScheduler.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -34,6 +35,23 @@ public class GetTeacherTimetableQueryHandler : IRequestHandler<GetTeacherTimetab
             .Where(e => e.TeacherId == request.TeacherId)
             .ToListAsync(cancellationToken);
 
+        // ClassRoomId is a Guid. SubjectId is a Guid?. Treat them differently!
+        var classRoomIds = entries.Select(e => e.ClassRoomId).Distinct().ToList();
+        var subjectIds = entries.Where(e => e.SubjectId.HasValue).Select(e => e.SubjectId.Value).Distinct().ToList();
+
+        var classRooms = await _context.ClassRooms
+            .Where(c => classRoomIds.Contains(c.Id))
+            .ToDictionaryAsync(c => c.Id, cancellationToken);
+
+        var schoolIds = classRooms.Values.Select(c => c.SchoolId).Distinct().ToList();
+        var schools = await _context.Schools
+            .Where(s => schoolIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+        var subjects = await _context.Subjects
+            .Where(s => subjectIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, cancellationToken);
+
         var days = await _context.SchoolWorkingDays
             .OrderBy(d => (int)d.DayOfWeek)
             .ToListAsync(cancellationToken);
@@ -42,15 +60,35 @@ public class GetTeacherTimetableQueryHandler : IRequestHandler<GetTeacherTimetab
 
         foreach (var day in days)
         {
-            var daySlots = entries.Where(e => e.DayOfWeek == day.DayOfWeek)
+            var daySlots = entries
+                .Where(e => e.DayOfWeek == day.DayOfWeek)
                 .OrderBy(e => e.SlotNumber)
-                .Select(e => new SlotDto(
-                    e.SlotNumber,
-                    _context.ClassRooms.FirstOrDefault(c => c.Id == e.ClassRoomId)?.Name,
-                    _context.Subjects.FirstOrDefault(s => s.Id == e.SubjectId)?.Name,
-                    _context.Schools.FirstOrDefault(s => s.Id == _context.ClassRooms.FirstOrDefault(c => c.Id == e.ClassRoomId)?.SchoolId)?.Name,
-                    e.Status
-                )).ToList();
+                .Select(e =>
+                {
+                    // ClassRoom is non-nullable, lookup directly
+                    classRooms.TryGetValue(e.ClassRoomId, out var room);
+
+                    // Subject is nullable, check HasValue first
+                    Subject subject = null;
+                    if (e.SubjectId.HasValue)
+                    {
+                        subjects.TryGetValue(e.SubjectId.Value, out subject);
+                    }
+
+                    School school = null;
+                    if (room != null)
+                    {
+                        schools.TryGetValue(room.SchoolId, out school);
+                    }
+
+                    return new SlotDto(
+                        e.SlotNumber,
+                        room?.Name,
+                        subject?.Name,
+                        school?.Name,
+                        e.Status
+                    );
+                }).ToList();
 
             dayGrids.Add(new DayGridDto(day.DayOfWeek, daySlots));
         }
