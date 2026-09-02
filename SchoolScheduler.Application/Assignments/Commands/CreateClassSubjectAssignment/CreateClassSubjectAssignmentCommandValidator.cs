@@ -17,6 +17,14 @@ public class CreateClassSubjectAssignmentCommandValidator : AbstractValidator<Cr
         RuleFor(x => x.TeacherId).NotEmpty();
         RuleFor(x => x.WeeklyQuota).GreaterThan(0);
 
+        // Rule: Teacher must be assigned to teach this subject
+        RuleFor(x => x).MustAsync(async (cmd, cancellation) =>
+        {
+            var isAssigned = await context.TeacherSubjects
+                .AnyAsync(ts => ts.TeacherId == cmd.TeacherId && ts.SubjectId == cmd.SubjectId, cancellation);
+            return isAssigned;
+        }).WithMessage("This teacher is not assigned to teach this subject.");
+
         // Rule: One teacher per subject per classroom
         RuleFor(x => x).MustAsync(async (cmd, cancellation) =>
         {

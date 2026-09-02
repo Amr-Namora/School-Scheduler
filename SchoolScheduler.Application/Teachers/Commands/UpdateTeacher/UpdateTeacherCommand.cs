@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SchoolScheduler.Application.Teachers.Commands.UpdateTeacher;
 
-public record UpdateTeacherCommand(Guid TeacherId, string Name) : IRequest<bool>;
+public record UpdateTeacherCommand(Guid TeacherId, string Name, string Email) : IRequest<bool>;
 
 public class UpdateTeacherCommandHandler : IRequestHandler<UpdateTeacherCommand, bool>
 {
@@ -28,7 +28,7 @@ public class UpdateTeacherCommandHandler : IRequestHandler<UpdateTeacherCommand,
             return false; // Not found
         }
 
-        teacher.Update(request.Name);
+        teacher.Update(request.Name, request.Email);
         await _context.SaveChangesAsync(cancellationToken);
 
         return true;

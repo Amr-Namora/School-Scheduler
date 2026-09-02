@@ -19,5 +19,12 @@ public class UnassignSubjectFromTeacherCommandValidator : AbstractValidator<Unas
             var exists = await context.TeacherSubjects.AnyAsync(ts => ts.TeacherId == cmd.TeacherId && ts.SubjectId == cmd.SubjectId, cancellation);
             return exists;
         }).WithMessage("Teacher is not assigned to this subject.");
+
+        RuleFor(x => x).MustAsync(async (cmd, cancellation) =>
+        {
+            var hasAssignments = await context.ClassSubjectAssignments
+                .AnyAsync(a => a.TeacherId == cmd.TeacherId && a.SubjectId == cmd.SubjectId, cancellation);
+            return !hasAssignments;
+        }).WithMessage("Cannot unassign this subject — it's still assigned to one or more classes.");
     }
 }

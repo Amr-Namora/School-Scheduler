@@ -34,6 +34,14 @@ public class UpdateClassSubjectAssignmentCommandValidator : AbstractValidator<Up
             return true;
         }).WithMessage("Teacher or Subject not found.");
 
+        // Rule: Teacher must be assigned to teach this subject
+        RuleFor(x => x).MustAsync(async (cmd, cancellation) =>
+        {
+            var isAssigned = await context.TeacherSubjects
+                .AnyAsync(ts => ts.TeacherId == cmd.TeacherId && ts.SubjectId == cmd.SubjectId, cancellation);
+            return isAssigned;
+        }).WithMessage("This teacher is not assigned to teach this subject.");
+
         // Capacity Check: (sum of other assignments for the target teacher + new quota) <= teacher's availability
         RuleFor(x => x).MustAsync(async (cmd, cancellation) =>
         {

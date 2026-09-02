@@ -1,3 +1,4 @@
+using SchoolScheduler.Application.Common;
 using SchoolScheduler.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,6 @@ namespace SchoolScheduler.Application.Common.Interfaces;
 
 public interface ITimetableGenerationService
 {
-    Task<IEnumerable<TimetableEntry>> GenerateAsync(Guid schoolId, CancellationToken cancellationToken);
-    Task<IEnumerable<TimetableEntry>> GenerateForClassRoomAsync(Guid classRoomId, CancellationToken cancellationToken);
+    Task<TimetableGenerationResult> GenerateAsync(Guid schoolId, CancellationToken cancellationToken);
+    Task<TimetableGenerationResult> GenerateForClassRoomAsync(Guid classRoomId, CancellationToken cancellationToken);
 }

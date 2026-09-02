@@ -1,52 +1,107 @@
-Build the SchoolScheduler.Infrastructure project, implementing the
-interfaces defined in Application.
+# Prompt 3, split into 3 tasks — send in order
 
-IDENTITY:
-- Use ASP.NET Core Identity with a dual-DbContext pattern (same as our
-  earlier DLMS project): one DbContext for business entities
-  (SchoolSchedulerDbContext), one for Identity (IdentityDbContext with a
-  custom ApplicationUser : IdentityUser that adds a FullName property).
-- Implement IUserLookupService (from Application) using
-  UserManager<ApplicationUser> — FindUserIdByEmailAsync via
-  FindByEmailAsync, GetFullNameAsync via FindByIdAsync then reading
-  FullName.
+---
 
-PERSISTENCE:
-- EF Core DbContext with DbSets for all Domain entities, including the
-  new TeacherLinkRequest.
-- Fluent API configurations (OnModelCreating) for relationships and keys.
-- Global query filter on every tenant-scoped entity so queries are
-  automatically scoped to SchoolId == current school (use an
-  ICurrentSchoolContext service, injected, populated by the Api layer
-  from the authenticated user). ICurrentSchoolContext should resolve the
-  current SchoolId by looking up School where School.UserId == the
-  authenticated user's id (cache per request so it's not queried
-  repeatedly).
-- ADDITIONAL global query filter on School: exclude rows where
-  IsDeleted == true, by default.
-- EF Core migrations setup.
+## Task 1 of 3 — Identity + dual DbContext setup
 
-SCHEDULING SOLVER (this is the core of the project):
-- Implement ITimetableGenerationService using the Google.OrTools NuGet
-  package's CP-SAT solver.
-- Model each (ClassRoom, Day, Slot) as a decision variable domain over
-  possible (Subject, Teacher) pairs, constrained to:
-  1. HardConstraint: teacher not double-booked at same (Day, Slot) across
-     all classes they're assigned to
-  2. HardConstraint: teacher only assigned within their declared
-     TeacherAvailability
-  3. HardConstraint: sum of a subject's occurrences per class per week
-     equals its WeeklyQuota exactly
-  4. HardConstraint: a subject appears at most 2 times per day per class
-  5. HardConstraint: no teacher has 3+ consecutive slots (same day) with
-     no break between them — model this as a sliding window constraint
-     over consecutive slot numbers
-  - If the solver finds the problem infeasible, return a result object
-    that explains which constraint category likely caused it (as far as
-    OR-Tools' infeasibility info allows), not just "failed."
-  - Keep the solver logic in its own well-named class(es), separate from
-    EF Core code, so it stays testable in isolation.
+```
+Set up ASP.NET Core Identity with a dual-DbContext pattern (same as our
+earlier DLMS project): one DbContext for business entities
+(SchoolSchedulerDbContext) with DbSets for all Domain entities including
+the new TeacherLinkRequest, and one for Identity (a separate
+IdentityDbContext<ApplicationUser> where ApplicationUser : IdentityUser
+adds a FullName property).
 
-Explain briefly, after generating, how you modeled the CP-SAT variables
-and constraints (2-3 sentences), so I can sanity-check the approach before
-we move to the API layer.
+Implement IUserLookupService (from Application) using
+UserManager<ApplicationUser>:
+- FindUserIdByEmailAsync via FindByEmailAsync
+- GetFullNameAsync via FindByIdAsync then reading FullName
+
+Add Fluent API configurations (OnModelCreating) for relationships and
+keys on the business DbContext. Set up EF Core migrations for both
+DbContexts.
+
+List every file created/changed when done.
+```
+
+---
+
+## Task 2 of 3 — Tenant scoping (global query filters)
+
+```
+Building on Task 1, implement tenant scoping.
+
+Add an ICurrentSchoolContext service (interface + implementation),
+injected, populated by the Api layer from the authenticated user. It
+resolves the current SchoolId by looking up School where School.UserId
+== the authenticated user's id (cache per request so it's not queried
+repeatedly).
+
+Add a global EF Core query filter on every tenant-scoped entity (every
+entity with a SchoolId column) so queries automatically scope to
+SchoolId == ICurrentSchoolContext's current school.
+
+Additionally, add a global query filter on School itself excluding rows
+where IsDeleted == true.
+
+IMPORTANT — reconcile with the existing inconsistency (found during the
+last Application-layer audit): some existing queries already take
+SchoolId as an explicit parameter and filter on it manually in the
+handler, while others rely entirely on implicit context. Once the global
+filter exists, BOTH styles will additionally be constrained by it — that
+is intentional and fine (defense in depth), but confirm that no handler
+is passing a SchoolId that could differ from ICurrentSchoolContext's
+resolved school in a way that would silently return empty results
+instead of a clear error. Flag anywhere you find this risk rather than
+silently "fixing" it — we'll decide case by case.
+
+IMPORTANT — do NOT apply this global filter's restriction to intentionally
+cross-tenant operations. Confirm these still work correctly with the new
+filter in place, adjusting with .IgnoreQueryFilters() (or a
+non-filtered raw query) if the global filter would break them:
+- GetTeacherTimetableQuery (spans every school a teacher works at, keyed
+  by UserId, not SchoolId)
+- CreateLinkRequestsForNewUserCommand (already uses IgnoreQueryFilters()
+  from the last session — keep that, don't force SchoolId scoping onto it)
+- AcceptTeacherLinkRequestCommand / DeclineTeacherLinkRequestCommand
+  (these act on a TeacherLinkRequest by UserId, not by school)
+
+TeacherLinkRequest itself has no SchoolId column — do not attempt to
+apply a SchoolId-based filter to it.
+
+List every file created/changed, and report anything you found under the
+"reconcile" point above.
+```
+
+---
+
+## Task 3 of 3 — CP-SAT scheduling solver
+
+```
+Building on Tasks 1-2, implement ITimetableGenerationService using the
+Google.OrTools NuGet package's CP-SAT solver.
+
+Model each (ClassRoom, Day, Slot) as a decision variable domain over
+possible (Subject, Teacher) pairs, constrained to:
+1. HardConstraint: teacher not double-booked at same (Day, Slot) across
+   all classes they're assigned to
+2. HardConstraint: teacher only assigned within their declared
+   TeacherAvailability
+3. HardConstraint: sum of a subject's occurrences per class per week
+   equals its WeeklyQuota exactly
+4. HardConstraint: a subject appears at most 2 times per day per class
+5. HardConstraint: no teacher has 3+ consecutive slots (same day) with
+   no break between them — model this as a sliding window constraint
+   over consecutive slot numbers
+
+If the solver finds the problem infeasible, return a result object that
+explains which constraint category likely caused it (as far as OR-Tools'
+infeasibility info allows), not just "failed."
+
+Keep the solver logic in its own well-named class(es), separate from EF
+Core code, so it stays testable in isolation.
+
+Explain briefly how you modeled the CP-SAT variables and constraints
+(2-3 sentences), so I can sanity-check the approach before we move to
+the API layer. List every file created/changed.
+```

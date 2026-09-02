@@ -28,10 +28,13 @@ public class GetTeacherTimetableQueryHandler : IRequestHandler<GetTeacherTimetab
 
     public async Task<TeacherTimetableDto> Handle(GetTeacherTimetableQuery request, CancellationToken cancellationToken)
     {
-        var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.Id == request.TeacherId, cancellationToken);
+        var teacher = await _context.Teachers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == request.TeacherId, cancellationToken);
         if (teacher == null) throw new Exception("Teacher not found.");
 
         var entries = await _context.TimetableEntries
+            .IgnoreQueryFilters()
             .Where(e => e.TeacherId == request.TeacherId)
             .ToListAsync(cancellationToken);
 
@@ -40,19 +43,23 @@ public class GetTeacherTimetableQueryHandler : IRequestHandler<GetTeacherTimetab
         var subjectIds = entries.Where(e => e.SubjectId.HasValue).Select(e => e.SubjectId.Value).Distinct().ToList();
 
         var classRooms = await _context.ClassRooms
+            .IgnoreQueryFilters()
             .Where(c => classRoomIds.Contains(c.Id))
             .ToDictionaryAsync(c => c.Id, cancellationToken);
 
         var schoolIds = classRooms.Values.Select(c => c.SchoolId).Distinct().ToList();
         var schools = await _context.Schools
+            .IgnoreQueryFilters()
             .Where(s => schoolIds.Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, cancellationToken);
 
         var subjects = await _context.Subjects
+            .IgnoreQueryFilters()
             .Where(s => subjectIds.Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, cancellationToken);
 
         var days = await _context.SchoolWorkingDays
+            .IgnoreQueryFilters()
             .OrderBy(d => (int)d.DayOfWeek)
             .ToListAsync(cancellationToken);
 
@@ -93,6 +100,6 @@ public class GetTeacherTimetableQueryHandler : IRequestHandler<GetTeacherTimetab
             dayGrids.Add(new DayGridDto(day.DayOfWeek, daySlots));
         }
 
-        return new TeacherTimetableDto(teacher.Id, teacher.Name, dayGrids);
+        return new TeacherTimetableDto(teacher.Id, teacher.DisplayName, dayGrids);
     }
 }

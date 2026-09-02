@@ -1,6 +1,7 @@
 using MediatR;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
+using SchoolScheduler.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,7 @@ public class GetClassTimetableQueryHandler : IRequestHandler<GetClassTimetableQu
                 .Select(e => new SlotDto(
                     e.SlotNumber,
                     _context.Subjects.FirstOrDefault(s => s.Id == e.SubjectId)?.Name,
-                    _context.Teachers.FirstOrDefault(t => t.Id == e.TeacherId)?.Name,
+                    _context.Teachers.FirstOrDefault(t => t.Id == e.TeacherId)?.DisplayName,
                     e.Status
                 )).ToList();
 

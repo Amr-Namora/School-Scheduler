@@ -1,3 +1,4 @@
+using System;
 using SchoolScheduler.Domain.Enums;
 
 namespace SchoolScheduler.Domain.Entities;
@@ -10,6 +11,8 @@ public class TeacherLinkRequest
     public LinkRequestStatus Status { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime? RespondedAt { get; private set; }
+
+    public virtual Teacher Teacher { get; private set; } = null!;
 
     public TeacherLinkRequest(Guid teacherId, string userId)
     {

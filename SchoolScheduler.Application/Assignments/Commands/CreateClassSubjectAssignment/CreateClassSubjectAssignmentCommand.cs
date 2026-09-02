@@ -27,8 +27,17 @@ public class CreateClassSubjectAssignmentCommandHandler : IRequestHandler<Create
 
     public async Task<Guid> Handle(CreateClassSubjectAssignmentCommand request, CancellationToken cancellationToken)
     {
+        var classRoom = await _context.ClassRooms
+            .FirstOrDefaultAsync(c => c.Id == request.ClassRoomId, cancellationToken);
+
+        if (classRoom == null)
+        {
+            throw new InvalidOperationException("Class room not found.");
+        }
+
         var assignment = new ClassSubjectAssignment(
             Guid.NewGuid(),
+            classRoom.SchoolId,
             request.ClassRoomId,
             request.SubjectId,
             request.TeacherId,

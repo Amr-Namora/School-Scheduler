@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Application.Common;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -25,37 +26,44 @@ public class GenerateTimetableCommandHandler : IRequestHandler<GenerateTimetable
 
     public async Task<bool> Handle(GenerateTimetableCommand request, CancellationToken cancellationToken)
     {
-        IEnumerable<TimetableEntry> results;
+        TimetableGenerationResult result;
 
         if (request.ClassRoomId.HasValue)
         {
-            results = await _solver.GenerateForClassRoomAsync(request.ClassRoomId.Value, cancellationToken);
+            result = await _solver.GenerateForClassRoomAsync(request.ClassRoomId.Value, cancellationToken);
         }
         else
         {
-            results = await _solver.GenerateAsync(request.SchoolId, cancellationToken);
+            result = await _solver.GenerateAsync(request.SchoolId, cancellationToken);
         }
 
-        if (results == null || !results.Any())
+        if (!result.Success)
         {
-            return false;
+            // In a real API, we might want to throw a custom exception with the failure reason
+            // so the Controller can return a 400/422 with the details.
+            throw new InvalidOperationException($"Timetable generation failed: {result.FailureReason} (Category: {result.ConstraintCategory})");
         }
 
         // Clear existing entries for the affected areas
         if (request.ClassRoomId.HasValue)
         {
-            var existing = _context.TimetableEntries.Where(e => e.ClassRoomId == request.ClassRoomId.Value).ToList();
-            foreach (var entry in existing) _context.TimetableEntries.Remove(entry);
+            var existing = await _context.TimetableEntries
+                .Where(e => e.ClassRoomId == request.ClassRoomId.Value)
+                .ToListAsync(cancellationToken);
+
+            _context.TimetableEntries.RemoveRange(existing);
         }
         else
         {
-            // For whole school, we clear everything associated with that school's classrooms
-            var classrooms = _context.ClassRooms.Where(c => c.SchoolId == request.SchoolId).Select(c => c.Id).ToList();
-            var existing = _context.TimetableEntries.Where(e => classrooms.Contains(e.ClassRoomId)).ToList();
-            foreach (var entry in existing) _context.TimetableEntries.Remove(entry);
+            // For whole school, we clear everything associated with that school
+            var existing = await _context.TimetableEntries
+                .Where(e => e.SchoolId == request.SchoolId)
+                .ToListAsync(cancellationToken);
+
+            _context.TimetableEntries.RemoveRange(existing);
         }
 
-        foreach (var entry in results)
+        foreach (var entry in result.Entries)
         {
             _context.TimetableEntries.Add(entry);
         }

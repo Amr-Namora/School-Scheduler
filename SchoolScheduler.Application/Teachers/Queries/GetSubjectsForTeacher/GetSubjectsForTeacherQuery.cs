@@ -23,6 +23,14 @@ public class GetSubjectsForTeacherQueryHandler : IRequestHandler<GetSubjectsForT
 
     public async Task<List<SubjectDto>> Handle(GetSubjectsForTeacherQuery request, CancellationToken cancellationToken)
     {
+        var teacherExists = await _context.Teachers
+            .AnyAsync(t => t.Id == request.TeacherId, cancellationToken);
+
+        if (!teacherExists)
+        {
+            throw new InvalidOperationException("Teacher not found.");
+        }
+
         var subjectIds = await _context.TeacherSubjects
             .Where(ts => ts.TeacherId == request.TeacherId)
             .Select(ts => ts.SubjectId)
