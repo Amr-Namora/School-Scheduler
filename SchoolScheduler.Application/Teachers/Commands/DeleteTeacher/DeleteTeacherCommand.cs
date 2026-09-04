@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -34,7 +35,7 @@ public class DeleteTeacherCommandHandler : IRequestHandler<DeleteTeacherCommand,
 
         if (hasAssignments || hasAvailability)
         {
-            throw new InvalidOperationException("Cannot delete teacher because they have associated class assignments or availability records.");
+            throw new ConflictException("Cannot delete teacher because they have associated class assignments or availability records.");
         }
 
         _context.Teachers.Remove(teacher);

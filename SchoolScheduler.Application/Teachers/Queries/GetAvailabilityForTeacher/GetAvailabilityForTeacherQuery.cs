@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Application.Teachers;
 using System;
@@ -29,7 +30,7 @@ public class GetAvailabilityForTeacherQueryHandler : IRequestHandler<GetAvailabi
 
         if (!teacherExists)
         {
-            throw new InvalidOperationException("Teacher not found.");
+            throw new NotFoundException("Teacher not found.");
         }
 
         var availabilities = await _context.TeacherAvailabilities

@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -33,7 +34,7 @@ public class UnassignSubjectFromTeacherCommandHandler : IRequestHandler<Unassign
 
         if (hasAssignments)
         {
-            throw new InvalidOperationException("Cannot unassign subject from teacher because they are already assigned to a classroom for this subject.");
+            throw new ConflictException("Cannot unassign subject from teacher because they are already assigned to a classroom for this subject.");
         }
 
         _context.TeacherSubjects.Remove(mapping);

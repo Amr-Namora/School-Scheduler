@@ -1,4 +1,5 @@
 using System;
+using SchoolScheduler.Domain.Common.Exceptions;
 
 namespace SchoolScheduler.Domain.Entities;
 
@@ -36,7 +37,7 @@ public class School
     {
         if (IsDeleted)
         {
-            throw new InvalidOperationException("School is already deleted.");
+            throw new ConflictException("School is already deleted.");
         }
 
         IsDeleted = true;

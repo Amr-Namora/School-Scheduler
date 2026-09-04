@@ -9,26 +9,44 @@ namespace SchoolScheduler.Infrastructure.Persistence;
 
 public class CurrentSchoolContext : ICurrentSchoolContext
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly ICurrentUserContext _currentUserContext;
     private readonly IApplicationDbContext _context;
     private Guid? _cachedSchoolId;
+    private bool _isResolved = false;
 
-    public CurrentSchoolContext(IHttpContextAccessor httpContextAccessor, IApplicationDbContext context)
+    public CurrentSchoolContext(ICurrentUserContext currentUserContext, IApplicationDbContext context)
     {
-        _httpContextAccessor = httpContextAccessor;
+        _currentUserContext = currentUserContext;
         _context = context;
     }
 
-    public Guid? SchoolId => _cachedSchoolId;
+    public Guid? SchoolId
+    {
+        get
+        {
+            if (!_isResolved)
+            {
+                throw new InvalidOperationException("School context has not been resolved. Call GetSchoolIdAsync() first.");
+            }
+            return _cachedSchoolId;
+        }
+    }
 
     public async Task<Guid?> GetSchoolIdAsync()
     {
-        if (_cachedSchoolId.HasValue) return _cachedSchoolId;
+        if (_isResolved) return _cachedSchoolId;
 
-        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        // Role Validation: Only "School" role can resolve a school context
+        if (_currentUserContext.Role != "School")
+        {
+            throw new UnauthorizedAccessException("School context is only available to users with the 'School' role.");
+        }
+
+        var userId = _currentUserContext.UserId;
         if (string.IsNullOrEmpty(userId))
         {
             _cachedSchoolId = null;
+            _isResolved = true;
             return null;
         }
 
@@ -37,6 +55,7 @@ public class CurrentSchoolContext : ICurrentSchoolContext
             .FirstOrDefaultAsync(s => s.UserId == userId, default);
 
         _cachedSchoolId = school?.Id;
+        _isResolved = true;
         return _cachedSchoolId;
     }
 }

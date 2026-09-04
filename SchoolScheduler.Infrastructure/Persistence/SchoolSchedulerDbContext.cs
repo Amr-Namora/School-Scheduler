@@ -53,7 +53,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -63,10 +64,12 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<Grade>()
                 .WithMany()
-                .HasForeignKey(e => e.GradeId);
+                .HasForeignKey(e => e.GradeId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -76,7 +79,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -86,7 +90,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -96,10 +101,12 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => new { e.TeacherId, e.SubjectId });
             entity.HasOne(e => e.Teacher)
                 .WithMany()
-                .HasForeignKey(e => e.TeacherId);
+                .HasForeignKey(e => e.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Subject)
                 .WithMany()
-                .HasForeignKey(e => e.SubjectId);
+                .HasForeignKey(e => e.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ClassSubjectAssignment
@@ -108,16 +115,20 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.ClassRoom)
                 .WithMany()
-                .HasForeignKey(e => e.ClassRoomId);
+                .HasForeignKey(e => e.ClassRoomId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Subject)
                 .WithMany()
-                .HasForeignKey(e => e.SubjectId);
+                .HasForeignKey(e => e.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Teacher)
                 .WithMany()
-                .HasForeignKey(e => e.TeacherId);
+                .HasForeignKey(e => e.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -127,7 +138,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => new { e.SchoolId, e.DayOfWeek });
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -137,7 +149,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -147,7 +160,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -157,7 +171,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => new { e.TeacherId, e.DayOfWeek, e.SlotNumber });
             entity.HasOne(e => e.Teacher)
                 .WithMany()
-                .HasForeignKey(e => e.TeacherId);
+                .HasForeignKey(e => e.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // TimetableEntry
@@ -166,16 +181,20 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne<School>()
                 .WithMany()
-                .HasForeignKey(e => e.SchoolId);
+                .HasForeignKey(e => e.SchoolId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.ClassRoom)
                 .WithMany()
-                .HasForeignKey(e => e.ClassRoomId);
+                .HasForeignKey(e => e.ClassRoomId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Subject)
                 .WithMany()
-                .HasForeignKey(e => e.SubjectId);
+                .HasForeignKey(e => e.SubjectId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Teacher)
                 .WithMany()
-                .HasForeignKey(e => e.TeacherId);
+                .HasForeignKey(e => e.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.HasQueryFilter(e => e.SchoolId == _currentSchoolContext.SchoolId);
         });
 
@@ -185,7 +204,8 @@ public class SchoolSchedulerDbContext : DbContext, IApplicationDbContext
             entity.HasKey(e => e.Id);
             entity.HasOne(e => e.Teacher)
                 .WithMany()
-                .HasForeignKey(e => e.TeacherId);
+                .HasForeignKey(e => e.TeacherId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

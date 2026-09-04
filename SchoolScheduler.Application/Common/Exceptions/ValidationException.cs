@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace SchoolScheduler.Application.Common.Exceptions;
+namespace SchoolScheduler.Domain.Common.Exceptions;
 
 public class ValidationException : Exception
 {

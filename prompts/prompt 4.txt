@@ -1,54 +1,176 @@
-Build the SchoolScheduler.Api project, wiring up Domain + Application +
-Infrastructure.
+# Prompt 4, updated — send these 4 tasks in order
+
+---
+
+## Task 1 of 4 — Auth (Identity + JWT) + role setup + current-user context + DI core
+
+```
+Build the authentication foundation for SchoolScheduler.Api.
+
+IDENTITY ROLES:
+- Seed two Identity roles at startup if they don't exist: "School" and
+  "Teacher" (use RoleManager<IdentityRole>).
 
 AUTH ENDPOINTS:
 - POST /auth/school/signup — creates an ApplicationUser (Identity) with
-  the given email/password, then calls CreateSchoolCommand with the new
-  user's id, returning a JWT.
+  the given email/password, adds them to the "School" role, then calls
+  CreateSchoolCommand with the new user's id, returning a JWT. If
+  Identity's CreateAsync fails (e.g. weak password, duplicate email),
+  return a 400 with the specific errors from IdentityResult — don't let
+  it fail silently or as a generic 500.
 - POST /auth/teacher/signup — creates an ApplicationUser with FullName,
-  email/password, then calls CreateLinkRequestsForNewUserCommand with
-  the new user's id and email to auto-create any pending link requests
-  from schools that already have a matching Teacher shell record.
-  Returns a JWT.
-- POST /auth/login — standard Identity login, returns a JWT with claims
-  for UserId and Role (School or Teacher; add Student later if/when that
-  role is built).
+  email/password, adds them to the "Teacher" role, then calls
+  CreateLinkRequestsForNewUserCommand with the new user's id and email.
+  Same error handling as above. Returns a JWT.
+- POST /auth/login — standard Identity login (SignInManager or manual
+  password check via UserManager), returns a JWT with claims for UserId
+  (NameIdentifier) and Role (from the user's actual Identity role
+  membership — read it, don't hardcode it).
+
+CURRENT-USER CONTEXT:
+- Add a lightweight ICurrentUserContext service (interface + Api-layer
+  implementation), injected per-request, exposing UserId and Role read
+  directly from the authenticated JWT claims — no database lookup. This
+  is the base context every authenticated endpoint can use.
+  (A separate, heavier ICurrentSchoolContext that does a database lookup
+  on top of this comes in Task 2 — don't build it yet, just this one.)
+
+JWT CONFIGURATION:
+- Add a Jwt section to appsettings.json (Secret/Key, Issuer, Audience,
+  ExpiryMinutes). Wire JWT bearer authentication in Program.cs using
+  these values. Use a reasonably long random secret — flag to me if you
+  used a placeholder so I can replace it before this goes anywhere real.
+
+DI COMPOSITION (core only, more added in later tasks):
+- Wire ASP.NET Core Identity (both roles and users), JWT bearer auth,
+  ICurrentUserContext, and both DbContexts in Program.cs.
+- Enable Swagger with JWT bearer support (so I can authorize requests in
+  the Swagger UI for testing).
+
+After finishing, confirm the project builds, Swagger comes up, and list
+the 3 auth endpoints with their routes.
+```
+
+---
+
+## Task 2 of 4 — School-scoping context + global exception handling
+
+```
+Building on Task 1:
+
+SCHOOL-SCOPED CONTEXT:
+- Implement ICurrentSchoolContext (interface already exists in
+  Infrastructure), built on top of ICurrentUserContext: resolves
+  SchoolId via the School.UserId == current user's id lookup, cached per
+  request. This service should only ever be resolved for requests
+  authenticated as the "School" role — if it's ever invoked for a
+  non-School user (defensive check, on top of endpoint-level
+  [Authorize(Roles = "School")]), throw clearly rather than silently
+  returning something wrong.
+- IMPORTANT RULE: any controller endpoint that calls an Application
+  command/query with a SchoolId parameter must ALWAYS use
+  ICurrentSchoolContext's resolved SchoolId — never accept SchoolId from
+  the request body, query string, or route for these endpoints, even if
+  the underlying command technically has a SchoolId parameter. This
+  closes the gap flagged during the tenant-scoping audit (a client could
+  otherwise pass a different school's id).
+- Teacher-facing endpoints never use ICurrentSchoolContext at all — they
+  use ICurrentUserContext's UserId directly (a teacher can work at
+  multiple schools, so there's no single SchoolId to resolve for them).
+  This applies to link requests and GetTeacherTimetableQuery now, and to
+  the teacher "me" endpoints added in Task 3.
+
+GLOBAL EXCEPTION HANDLING:
+- Add exception-handling middleware (or an IExceptionHandler /
+  UseExceptionHandler pipeline, whichever fits current .NET version
+  best) that translates:
+  - FluentValidation's ValidationException → 400 Bad Request with the
+    validation errors in the response body
+  - The "not found" InvalidOperationExceptions added throughout
+    Application (the ones from the CRUD/tenant-scoping audit work) → 404
+    Not Found
+  - The "blocked delete due to dependents" and "capacity exceeded" /
+    "teacher not assigned to subject" InvalidOperationExceptions → 409
+    Conflict (or 400, your call — pick one and apply it consistently,
+    tell me which)
+  - Anything else unhandled → 500, but logged with enough detail to
+    debug
+- Don't let raw exception messages/stack traces leak to the client in
+  the 500 case; do include the specific message in the 400/404/409
+  cases since those are expected, meaningful errors the client should
+  see.
+
+List every file created/changed.
+```
+
+---
+
+## Task 3 of 4 — Standard CRUD + teacher "me" endpoints + link-request endpoints
+
+```
+Building on Tasks 1-2, add controllers (or minimal API endpoints) for:
+
+- School setup: ConfigureWorkWeek, LectureSlot and BreakSlot CRUD,
+  GetSchoolSetupStatus, and the school delete endpoint (must call
+  SoftDeleteSchoolCommand, not a hard delete). Require the "School" role,
+  SchoolId from ICurrentSchoolContext.
+- Grade, ClassRoom, Subject CRUD. Require the "School" role.
+- Teacher CRUD, AssignSubjectsToTeacher / UnassignSubjectFromTeacher,
+  SetTeacherAvailability / DeleteTeacherAvailabilitySlot /
+  ClearTeacherAvailability. Require the "School" role, SchoolId from
+  ICurrentSchoolContext (a school manages its own teachers).
+- ClassSubjectAssignment CRUD. Require the "School" role.
+
+TEACHER-FACING ENDPOINTS — separate routes, not shared/branching logic:
+- School-side view: GET /school/teachers/{teacherId}/availability and
+  GET /school/teachers/{teacherId}/subjects — [Authorize(Roles =
+  "School")], verify the Teacher belongs to the current school
+  (Teacher.SchoolId == ICurrentSchoolContext.SchoolId) before returning
+  data.
+- Teacher's own view: GET /teacher/me/availability and GET
+  /teacher/me/subjects — [Authorize(Roles = "Teacher")], no teacherId in
+  the route; look up ALL Teacher rows across every school where
+  Teacher.UserId == ICurrentUserContext.UserId and return an aggregated
+  result across schools (include school name/id per entry, same pattern
+  as GetTeacherTimetableQuery).
 
 LINK REQUEST ENDPOINTS (teacher-facing):
 - GET /teacher/link-requests — pending requests for the current user
-  (GetPendingLinkRequestsForUserQuery)
+  (GetPendingLinkRequestsForUserQuery), [Authorize(Roles = "Teacher")],
+  uses ICurrentUserContext's UserId directly.
 - POST /teacher/link-requests/{id}/accept
 - POST /teacher/link-requests/{id}/decline
 
-STANDARD ENDPOINTS:
-- Controllers (or minimal API endpoints) for every remaining
-  Command/Query defined in Application: school setup endpoints,
-  grade/classroom/subject endpoints, teacher/availability endpoints,
-  class/assignment endpoints, GenerateTimetable, and the two timetable
-  read endpoints. Use SoftDeleteSchoolCommand (not a hard delete) for the
-  school delete endpoint.
+List every endpoint created with its route, HTTP method, and required
+role.
+```
 
-TENANT SCOPING:
-- Implement ICurrentSchoolContext (interface from Infrastructure) reading
-  the authenticated user's id from JWT claims and resolving SchoolId via
-  School.UserId lookup, as described in the Infrastructure prompt.
-- For teacher-facing endpoints that aren't school-scoped (link requests,
-  GetTeacherTimetableQuery), use the authenticated UserId directly
-  instead of ICurrentSchoolContext.
+---
 
-DI COMPOSITION:
-- Wire MediatR, FluentValidation, AutoMapper, both DbContexts, ASP.NET
-  Core Identity, JWT auth, and the OR-Tools solver service in Program.cs.
+## Task 4 of 4 — Timetable endpoints + response DTOs
 
-Swagger/OpenAPI enabled for manual testing.
+```
+Building on Tasks 1-3, add:
 
-DTOs/response shapes: class timetable and teacher timetable responses
-should return a clean day-by-slot grid structure (not raw entities), and
-the teacher timetable response must include the School name/id per entry
-since a teacher can work at multiple schools. Teacher-related responses
-(anywhere DisplayName is shown) should resolve the "effective name" — if
-UserId is set, use IUserLookupService.GetFullNameAsync(UserId); otherwise
-fall back to Teacher.DisplayName.
+- POST /school/generate-timetable (or similar) — calls GenerateTimetable.
+  Require the "School" role, SchoolId from ICurrentSchoolContext.
+- GET class timetable read endpoint (School role, verify the ClassRoom
+  belongs to the current school).
+- GET /teacher/me/timetable — Teacher role, aggregates across every
+  school via ICurrentUserContext's UserId (same pattern as the
+  availability/subjects "me" endpoints from Task 3).
 
-After generating, list all endpoints created with their routes and HTTP
-methods, and confirm the project builds and Swagger comes up.
+RESPONSE SHAPE:
+- Class timetable and teacher timetable responses must return a clean
+  day-by-slot grid structure (not raw entities). Teacher timetable
+  entries must include the School name/id per entry, since a teacher can
+  work at multiple schools.
+- Everywhere a Teacher's name is shown in a response, resolve the
+  "effective name": if UserId is set, use
+  IUserLookupService.GetFullNameAsync(UserId); otherwise fall back to
+  Teacher.DisplayName.
+
+Confirm the full project builds, Swagger comes up, and give me the
+complete final list of every endpoint across all 4 tasks (route, method,
+required role) so I have one reference list for the whole Api layer.
+```

@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -36,7 +37,7 @@ public class SoftDeleteSchoolCommandHandler : IRequestHandler<SoftDeleteSchoolCo
 
         if (hasGrades || hasTeachers || hasSubjects || hasSlots)
         {
-            throw new InvalidOperationException("Cannot soft-delete school because it has associated grades, teachers, subjects, or lecture slots.");
+            throw new ConflictException("Cannot soft-delete school because it has associated grades, teachers, subjects, or lecture slots.");
         }
 
         school.SoftDelete();

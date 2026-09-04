@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -28,7 +29,7 @@ public class GetSubjectsForTeacherQueryHandler : IRequestHandler<GetSubjectsForT
 
         if (!teacherExists)
         {
-            throw new InvalidOperationException("Teacher not found.");
+            throw new NotFoundException("Teacher not found.");
         }
 
         var subjectIds = await _context.TeacherSubjects

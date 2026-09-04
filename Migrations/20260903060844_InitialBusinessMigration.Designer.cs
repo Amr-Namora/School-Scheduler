@@ -12,7 +12,7 @@ using SchoolScheduler.Infrastructure.Persistence;
 namespace School_Scheduler.Migrations
 {
     [DbContext(typeof(SchoolSchedulerDbContext))]
-    [Migration("20260902095612_InitialBusinessMigration")]
+    [Migration("20260903060844_InitialBusinessMigration")]
     partial class InitialBusinessMigration
     {
         /// <inheritdoc />
@@ -361,7 +361,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -370,13 +370,13 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.Grade", null)
                         .WithMany()
                         .HasForeignKey("GradeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -385,25 +385,25 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.ClassRoom", "ClassRoom")
                         .WithMany()
                         .HasForeignKey("ClassRoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ClassRoom");
@@ -418,7 +418,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -427,7 +427,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -436,7 +436,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -445,7 +445,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -454,7 +454,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -463,7 +463,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Teacher");
@@ -474,7 +474,7 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Teacher");
@@ -485,13 +485,13 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.Subject", "Subject")
                         .WithMany()
                         .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
                         .HasForeignKey("TeacherId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Subject");
@@ -504,22 +504,24 @@ namespace School_Scheduler.Migrations
                     b.HasOne("SchoolScheduler.Domain.Entities.ClassRoom", "ClassRoom")
                         .WithMany()
                         .HasForeignKey("ClassRoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.School", null)
                         .WithMany()
                         .HasForeignKey("SchoolId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("SchoolScheduler.Domain.Entities.Subject", "Subject")
                         .WithMany()
-                        .HasForeignKey("SubjectId");
+                        .HasForeignKey("SubjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SchoolScheduler.Domain.Entities.Teacher", "Teacher")
                         .WithMany()
-                        .HasForeignKey("TeacherId");
+                        .HasForeignKey("TeacherId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ClassRoom");
 

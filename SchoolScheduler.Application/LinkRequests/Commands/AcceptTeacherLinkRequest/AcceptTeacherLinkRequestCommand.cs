@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
@@ -27,7 +28,7 @@ public class AcceptTeacherLinkRequestCommandHandler : IRequestHandler<AcceptTeac
 
         if (linkRequest == null)
         {
-            throw new InvalidOperationException("Link request not found.");
+            throw new NotFoundException("Link request not found.");
         }
 
         if (linkRequest.UserId != request.RespondingUserId)
@@ -37,7 +38,7 @@ public class AcceptTeacherLinkRequestCommandHandler : IRequestHandler<AcceptTeac
 
         if (linkRequest.Status != LinkRequestStatus.Pending)
         {
-            throw new InvalidOperationException("This request has already been responded to.");
+            throw new ConflictException("This request has already been responded to.");
         }
 
         var teacher = await _context.Teachers
@@ -45,7 +46,7 @@ public class AcceptTeacherLinkRequestCommandHandler : IRequestHandler<AcceptTeac
 
         if (teacher == null)
         {
-            throw new InvalidOperationException("Associated teacher record not found.");
+            throw new NotFoundException("Associated teacher record not found.");
         }
 
         // This will throw if already linked

@@ -1,3 +1,4 @@
+using SchoolScheduler.Domain.Common.Exceptions;
 using MediatR;
 using SchoolScheduler.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ public class GetAllClassRoomsQueryHandler : IRequestHandler<GetAllClassRoomsQuer
 
         if (!gradeExists)
         {
-            throw new InvalidOperationException("Grade not found.");
+            throw new NotFoundException("Grade not found.");
         }
 
         return await _context.ClassRooms

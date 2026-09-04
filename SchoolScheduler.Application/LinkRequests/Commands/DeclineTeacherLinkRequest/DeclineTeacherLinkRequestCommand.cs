@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
@@ -27,7 +28,7 @@ public class DeclineTeacherLinkRequestCommandHandler : IRequestHandler<DeclineTe
 
         if (linkRequest == null)
         {
-            throw new InvalidOperationException("Link request not found.");
+            throw new NotFoundException("Link request not found.");
         }
 
         if (linkRequest.UserId != request.RespondingUserId)
@@ -37,7 +38,7 @@ public class DeclineTeacherLinkRequestCommandHandler : IRequestHandler<DeclineTe
 
         if (linkRequest.Status != LinkRequestStatus.Pending)
         {
-            throw new InvalidOperationException("This request has already been responded to.");
+            throw new ConflictException("This request has already been responded to.");
         }
 
         linkRequest.Respond(LinkRequestStatus.Declined);

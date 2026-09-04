@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -34,7 +35,7 @@ public class DeleteSubjectCommandHandler : IRequestHandler<DeleteSubjectCommand,
 
         if (hasAssignments || hasTeacherMappings)
         {
-            throw new InvalidOperationException("Cannot delete subject because it is assigned to classrooms or teachers.");
+            throw new ConflictException("Cannot delete subject because it is assigned to classrooms or teachers.");
         }
 
         _context.Subjects.Remove(subject);

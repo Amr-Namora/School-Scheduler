@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -33,7 +34,7 @@ public class DeleteClassRoomCommandHandler : IRequestHandler<DeleteClassRoomComm
 
         if (hasAssignments)
         {
-            throw new InvalidOperationException("Cannot delete class room because it has associated subject assignments.");
+            throw new ConflictException("Cannot delete class room because it has associated subject assignments.");
         }
 
         _context.ClassRooms.Remove(classroom);

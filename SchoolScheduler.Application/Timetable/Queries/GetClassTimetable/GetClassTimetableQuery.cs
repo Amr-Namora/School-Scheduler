@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
 using SchoolScheduler.Domain.Enums;
@@ -11,28 +12,39 @@ using System.Threading.Tasks;
 
 namespace SchoolScheduler.Application.Timetable.Queries.GetClassTimetable;
 
-public record ClassTimetableDto(Guid ClassRoomId, List<DayGridDto> Days);
-public record DayGridDto(SchoolDayOfWeek Day, List<SlotDto> Slots);
 public record SlotDto(int SlotNumber, string? SubjectName, string? TeacherName, TimetableEntryStatus Status);
+public record DayGridDto(SchoolDayOfWeek Day, List<SlotDto> Slots);
+public record ClassTimetableDto(Guid ClassRoomId, string ClassRoomName, List<DayGridDto> Days);
 
-public record GetClassTimetableQuery(Guid ClassRoomId) : IRequest<ClassTimetableDto>;
+public record GetClassTimetableQuery(Guid ClassRoomId, Guid SchoolId) : IRequest<ClassTimetableDto>;
 
 public class GetClassTimetableQueryHandler : IRequestHandler<GetClassTimetableQuery, ClassTimetableDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUserLookupService _userLookupService;
 
-    public GetClassTimetableQueryHandler(IApplicationDbContext context)
+    public GetClassTimetableQueryHandler(IApplicationDbContext context, IUserLookupService userLookupService)
     {
         _context = context;
+        _userLookupService = userLookupService;
     }
 
     public async Task<ClassTimetableDto> Handle(GetClassTimetableQuery request, CancellationToken cancellationToken)
     {
+        var classRoom = await _context.ClassRooms
+            .FirstOrDefaultAsync(c => c.Id == request.ClassRoomId && c.SchoolId == request.SchoolId, cancellationToken);
+
+        if (classRoom == null)
+        {
+            throw new NotFoundException("Class room not found.");
+        }
+
         var entries = await _context.TimetableEntries
             .Where(e => e.ClassRoomId == request.ClassRoomId)
             .ToListAsync(cancellationToken);
 
         var days = await _context.SchoolWorkingDays
+            .Where(d => d.SchoolId == request.SchoolId)
             .OrderBy(d => (int)d.DayOfWeek)
             .ToListAsync(cancellationToken);
 
@@ -40,18 +52,38 @@ public class GetClassTimetableQueryHandler : IRequestHandler<GetClassTimetableQu
 
         foreach (var day in days)
         {
-            var daySlots = entries.Where(e => e.DayOfWeek == day.DayOfWeek)
+            var daySlots = entries
+                .Where(e => e.DayOfWeek == day.DayOfWeek)
                 .OrderBy(e => e.SlotNumber)
-                .Select(e => new SlotDto(
-                    e.SlotNumber,
-                    _context.Subjects.FirstOrDefault(s => s.Id == e.SubjectId)?.Name,
-                    _context.Teachers.FirstOrDefault(t => t.Id == e.TeacherId)?.DisplayName,
-                    e.Status
-                )).ToList();
+                .Select(async e =>
+                {
+                    var teacher = await _context.Teachers
+                        .FirstOrDefaultAsync(t => t.Id == e.TeacherId, cancellationToken);
 
-            dayGrids.Add(new DayGridDto(day.DayOfWeek, daySlots));
+                    string? effectiveName = null;
+                    if (teacher != null)
+                    {
+                        effectiveName = !string.IsNullOrEmpty(teacher.UserId)
+                            ? await _userLookupService.GetFullNameAsync(teacher.UserId)
+                            : teacher.DisplayName;
+                    }
+
+                    var subject = await _context.Subjects
+                        .FirstOrDefaultAsync(s => s.Id == e.SubjectId, cancellationToken);
+
+                    return new SlotDto(
+                        e.SlotNumber,
+                        subject?.Name,
+                        effectiveName,
+                        e.Status
+                    );
+                }).ToList();
+
+            // Resolve the async tasks for the slots
+            var resolvedSlots = await Task.WhenAll(daySlots);
+            dayGrids.Add(new DayGridDto(day.DayOfWeek, resolvedSlots.ToList()));
         }
 
-        return new ClassTimetableDto(request.ClassRoomId, dayGrids);
+        return new ClassTimetableDto(classRoom.Id, classRoom.Name, dayGrids);
     }
 }

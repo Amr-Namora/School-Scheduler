@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading;
@@ -33,7 +34,7 @@ public class DeleteGradeCommandHandler : IRequestHandler<DeleteGradeCommand, boo
 
         if (hasRooms)
         {
-            throw new InvalidOperationException("Cannot delete grade because it has associated classrooms.");
+            throw new ConflictException("Cannot delete grade because it has associated classrooms.");
         }
 
         _context.Grades.Remove(grade);

@@ -1,4 +1,5 @@
 using System;
+using SchoolScheduler.Domain.Common.Exceptions;
 
 namespace SchoolScheduler.Domain.Entities;
 
@@ -33,7 +34,7 @@ public class Teacher
     {
         if (UserId != null)
         {
-            throw new InvalidOperationException("Teacher is already linked to a user.");
+            throw new ConflictException("Teacher is already linked to a user.");
         }
 
         if (string.IsNullOrWhiteSpace(userId))

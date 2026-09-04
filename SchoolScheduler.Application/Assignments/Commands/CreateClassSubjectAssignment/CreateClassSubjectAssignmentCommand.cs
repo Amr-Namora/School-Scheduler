@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -32,7 +33,7 @@ public class CreateClassSubjectAssignmentCommandHandler : IRequestHandler<Create
 
         if (classRoom == null)
         {
-            throw new InvalidOperationException("Class room not found.");
+            throw new NotFoundException("Class room not found.");
         }
 
         var assignment = new ClassSubjectAssignment(

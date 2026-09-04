@@ -1,4 +1,5 @@
 using MediatR;
+using SchoolScheduler.Domain.Common.Exceptions;
 using SchoolScheduler.Application.Common.Interfaces;
 using SchoolScheduler.Application.Assignments;
 using System;
@@ -29,7 +30,7 @@ public class GetAllAssignmentsForClassRoomQueryHandler : IRequestHandler<GetAllA
 
         if (!classroomExists)
         {
-            throw new InvalidOperationException("Class room not found.");
+            throw new NotFoundException("Class room not found.");
         }
 
         return await _context.ClassSubjectAssignments

@@ -26,7 +26,7 @@ public class ValidationBehaviour<TRequest, TResponse> : IPipelineBehavior<TReque
             var failures = validationResults.SelectMany(r => r.Errors).Where(f => f != null).ToList();
 
             if (failures.Count != 0)
-                throw new SchoolScheduler.Application.Common.Exceptions.ValidationException(failures);
+                throw new SchoolScheduler.Domain.Common.Exceptions.ValidationException(failures);
         }
         return await next();
     }
