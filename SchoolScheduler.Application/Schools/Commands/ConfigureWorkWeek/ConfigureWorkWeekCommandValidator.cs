@@ -13,7 +13,6 @@ public class ConfigureWorkWeekCommandValidator : AbstractValidator<ConfigureWork
 
         RuleForEach(x => x.DayConfigs).ChildRules(day =>
         {
-            day.RuleFor(d => d.LectureSlots).NotEmpty().WithMessage("Each working day must have at least one lecture slot.");
             day.RuleForEach(d => d.LectureSlots).ChildRules(slot =>
             {
                 slot.RuleFor(s => s.SlotNumber).GreaterThan(0);

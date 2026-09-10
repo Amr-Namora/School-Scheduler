@@ -61,13 +61,13 @@ public class ConfigureWorkWeekCommandHandler : IRequestHandler<ConfigureWorkWeek
             var workingDay = new SchoolWorkingDay(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek);
             _context.SchoolWorkingDays.Add(workingDay);
 
-            foreach (var slotConfig in dayConfig.LectureSlots)
+            foreach (var slotConfig in dayConfig.LectureSlots ?? new List<SlotConfig>())
             {
                 var slot = new LectureSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, slotConfig.SlotNumber, slotConfig.StartTime, slotConfig.EndTime);
                 _context.LectureSlots.Add(slot);
             }
 
-            foreach (var breakConfig in dayConfig.BreakSlots)
+            foreach (var breakConfig in dayConfig.BreakSlots ?? new List<BreakConfig>())
             {
                 var brk = new BreakSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, breakConfig.AfterSlotNumber, breakConfig.StartTime, breakConfig.EndTime);
                 _context.BreakSlots.Add(brk);

@@ -1,3 +1,5 @@
+using Common;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,28 +10,60 @@ using SchoolScheduler.Infrastructure.Identity;
 using SchoolScheduler.Infrastructure.Persistence;
 using System.Reflection;
 using System.Text;
-using Common;
+using Common; // Add this using at the top
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+// Replace your AddControllers line with this:
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ResolveSchoolContextFilter>();
+});
+
 // Add services to the container.
-
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy => policy.WithOrigins("http://localhost:5173")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
 // Exception Handling
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-// JWT Configuration
+// 1. Connection String
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+// 2. Business DbContext
+builder.Services.AddDbContext<SchoolSchedulerDbContext>(options =>
+    options.UseSqlServer(connectionString));
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<SchoolSchedulerDbContext>());
+
+// 3. Identity DbContext
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// 4. Identity Setup (MUST BE BEFORE JWT AUTHENTICATION)
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
+
+// 5. JWT Configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
+// 6. Authentication Setup (MUST BE AFTER IDENTITY)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme; // Added this to override Identity's default
 })
 .AddJwtBearer(options =>
 {
@@ -45,6 +79,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Swagger Setup
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -72,25 +107,6 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Connection String
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-// Business DbContext
-builder.Services.AddDbContext<SchoolSchedulerDbContext>(options =>
-    options.UseSqlServer(connectionString));
-builder.Services.AddScoped<IApplicationDbContext>(provider =>
-    provider.GetRequiredService<SchoolSchedulerDbContext>());
-
-// Identity DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
-
-// Identity Setup
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
 // Application Services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentSchoolContext, CurrentSchoolContext>();
@@ -100,8 +116,13 @@ builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IdentitySeedService>();
 
-// MediatR - Scan for handlers in the Application assembly
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(IApplicationDbContext).Assembly));
+// MediatR & FluentValidation
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(IApplicationDbContext).Assembly);
+    cfg.AddOpenBehavior(typeof(SchoolScheduler.Application.Common.Behaviours.ValidationBehaviour<,>));
+});
+
+builder.Services.AddValidatorsFromAssembly(typeof(IApplicationDbContext).Assembly);
 
 var app = builder.Build();
 
@@ -115,6 +136,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");   // <-- add this line here
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -127,8 +149,6 @@ using (var scope = app.Services.CreateScope())
     var seedService = scope.ServiceProvider.GetRequiredService<IdentitySeedService>();
     await seedService.SeedRolesAsync();
 }
-
-// ... (rest of the file)
 
 app.Run();
 

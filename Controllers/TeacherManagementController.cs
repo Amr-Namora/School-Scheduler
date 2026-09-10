@@ -9,6 +9,7 @@ using SchoolScheduler.Application.Teachers.Commands.SetTeacherAvailability;
 using SchoolScheduler.Application.Teachers.Commands.UnassignSubjectFromTeacher;
 using SchoolScheduler.Application.Teachers.Commands.UpdateTeacher;
 using SchoolScheduler.Application.Teachers.Commands.AssignSubjectsToTeacher;
+using SchoolScheduler.Application.Teachers.Queries.GetAllTeachers;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -27,6 +28,14 @@ public class TeacherManagementController : ControllerBase
     {
         _mediator = mediator;
         _schoolContext = schoolContext;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllTeachers()
+    {
+        var query = new GetAllTeachersQuery(_schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
     }
 
     [HttpPost]

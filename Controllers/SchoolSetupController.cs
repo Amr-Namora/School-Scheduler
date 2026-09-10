@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using SchoolScheduler.Application.Schools.Commands.ConfigureWorkWeek;
+using SchoolScheduler.Application.Schools.Queries.GetWorkWeekConfig;
 using SchoolScheduler.Application.Schools.Commands.CreateSchool;
 using SchoolScheduler.Application.Schools.Commands.SoftDeleteSchool;
 using SchoolScheduler.Application.Schools.Queries.GetSchoolSetupStatus;
@@ -11,6 +12,8 @@ using SchoolScheduler.Application.Slots.Commands.DeleteBreakSlot;
 using SchoolScheduler.Application.Slots.Commands.DeleteLectureSlot;
 using SchoolScheduler.Application.Slots.Commands.UpdateBreakSlot;
 using SchoolScheduler.Application.Slots.Commands.UpdateLectureSlot;
+using SchoolScheduler.Application.Slots.Queries.GetAllLectureSlots;
+using SchoolScheduler.Application.Slots.Queries.GetAllBreakSlots;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -37,6 +40,30 @@ public class SchoolSetupController : ControllerBase
         var updatedCommand = command with { SchoolId = _schoolContext.SchoolId.Value };
         await _mediator.Send(updatedCommand);
         return Ok();
+    }
+
+    [HttpGet("work-week")]
+    public async Task<IActionResult> GetWorkWeekConfig()
+    {
+        var query = new GetWorkWeekConfigQuery(_schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("lecture-slots")]
+    public async Task<IActionResult> GetLectureSlots()
+    {
+        var query = new GetAllLectureSlotsQuery(_schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("break-slots")]
+    public async Task<IActionResult> GetBreakSlots()
+    {
+        var query = new GetAllBreakSlotsQuery(_schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
     }
 
     [HttpPost("lecture-slots")]

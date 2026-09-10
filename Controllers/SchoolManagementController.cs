@@ -103,7 +103,7 @@ public class SchoolManagementController : ControllerBase
     }
 
     [HttpGet("class-rooms")]
-    public async Task<IActionResult> GetAllClassRooms([FromQuery] Guid gradeId)
+    public async Task<IActionResult> GetAllClassRooms([FromQuery] Guid? gradeId)
     {
         var query = new GetAllClassRoomsQuery(_schoolContext.SchoolId.Value, gradeId);
         var result = await _mediator.Send(query);

@@ -26,13 +26,25 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         _logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
 
+        if (exception is ValidationException ve)
+        {
+            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await httpContext.Response.WriteAsJsonAsync(
+                new ValidationProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validation Error",
+                    Detail = "One or more validation failures have occurred.",
+                    Errors = ve.Errors
+                        .GroupBy(e => e.PropertyName)
+                        .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())
+                },
+                cancellationToken);
+            return true;
+        }
+
         var (statusCode, title, detail) = exception switch
         {
-            ValidationException ve => (
-                StatusCodes.Status400BadRequest,
-                "Validation Error",
-                string.Join(" ", ve.Errors.Select(e => e.ErrorMessage))
-            ),
             NotFoundException => (
                 StatusCodes.Status404NotFound,
                 "Not Found",
