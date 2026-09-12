@@ -11,6 +11,7 @@ using SchoolScheduler.Application.Teachers.Commands.UpdateTeacher;
 using SchoolScheduler.Application.Teachers.Commands.AssignSubjectsToTeacher;
 using SchoolScheduler.Application.Teachers.Queries.GetAllTeachers;
 using SchoolScheduler.Application.Common.Interfaces;
+using SchoolScheduler.Application.Teachers.Queries.GetTeachersConfigs;
 using System;
 using System.Threading.Tasks;
 
@@ -28,6 +29,14 @@ public class TeacherManagementController : ControllerBase
     {
         _mediator = mediator;
         _schoolContext = schoolContext;
+    }
+
+    [HttpGet("configs")]
+    public async Task<IActionResult> GetConfigs([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var query = new GetTeachersConfigsQuery(_schoolContext.SchoolId.Value, page, pageSize);
+        var result = await _mediator.Send(query);
+        return Ok(result);
     }
 
     [HttpGet]

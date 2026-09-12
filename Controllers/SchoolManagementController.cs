@@ -14,6 +14,7 @@ using SchoolScheduler.Application.ClassRooms.Queries.GetClassRoomById;
 using SchoolScheduler.Application.Subjects.Commands.CreateSubject;
 using SchoolScheduler.Application.Subjects.Commands.DeleteSubject;
 using SchoolScheduler.Application.Subjects.Commands.UpdateSubject;
+using SchoolScheduler.Application.Subjects.Queries.GetSubjectsWithTeachers;
 using SchoolScheduler.Application.Subjects.Queries.GetAllSubjects;
 using SchoolScheduler.Application.Subjects.Queries.GetSubjectById;
 using SchoolScheduler.Application.Common.Interfaces;
@@ -141,6 +142,14 @@ public class SchoolManagementController : ControllerBase
         var command = new DeleteSubjectCommand(id);
         await _mediator.Send(command);
         return Ok();
+    }
+
+    [HttpGet("/school/subjects/teachers")]
+    public async Task<IActionResult> GetSubjectsWithTeachers()
+    {
+        var query = new GetSubjectsWithTeachersQuery(_schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
     }
 
     [HttpGet("subjects")]

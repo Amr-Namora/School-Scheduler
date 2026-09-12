@@ -26,7 +26,7 @@ public class GetAllTeachersQueryHandler : IRequestHandler<GetAllTeachersQuery, L
         return await _context.Teachers
             .Where(t => t.SchoolId == request.SchoolId)
             .OrderBy(t => t.DisplayName)
-            .Select(t => new TeacherDto(t.Id, t.SchoolId, t.DisplayName))
+            .Select(t => new TeacherDto(t.Id, t.SchoolId, t.DisplayName, t.Email))
             .ToListAsync(cancellationToken);
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using SchoolScheduler.Application.Assignments.Commands.CreateClassSubjectAssignment;
+using SchoolScheduler.Application.Assignments.Commands.BulkCreateClassSubjectAssignment;
 using SchoolScheduler.Application.Assignments.Commands.DeleteClassSubjectAssignment;
 using SchoolScheduler.Application.Assignments.Commands.UpdateClassSubjectAssignment;
 using SchoolScheduler.Application.Assignments.Queries.GetAllAssignmentsForClassRoom;
@@ -31,6 +32,13 @@ public class ClassAssignmentController : ControllerBase
         // Command doesn't take SchoolId, handler resolves it from ClassRoom
         var id = await _mediator.Send(command);
         return Ok(id);
+    }
+
+    [HttpPost("bulk")]
+    public async Task<IActionResult> CreateBulkAssignments([FromBody] BulkCreateClassSubjectAssignmentCommand command)
+    {
+        var count = await _mediator.Send(command);
+        return Ok(new { Count = count });
     }
 
     [HttpPut("{id}")]

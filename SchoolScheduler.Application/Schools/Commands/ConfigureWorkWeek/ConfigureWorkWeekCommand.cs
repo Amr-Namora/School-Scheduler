@@ -12,8 +12,8 @@ namespace SchoolScheduler.Application.Schools.Commands.ConfigureWorkWeek;
 
 public record WorkWeekDayConfig(
     SchoolDayOfWeek DayOfWeek,
-    List<SlotConfig> LectureSlots,
-    List<BreakConfig> BreakSlots
+    List<SlotConfig>? LectureSlots,
+    List<BreakConfig>? BreakSlots
 );
 
 public record SlotConfig(int SlotNumber, TimeSpan StartTime, TimeSpan EndTime);
@@ -35,42 +35,57 @@ public class ConfigureWorkWeekCommandHandler : IRequestHandler<ConfigureWorkWeek
 
     public async Task<bool> Handle(ConfigureWorkWeekCommand request, CancellationToken cancellationToken)
     {
-        // Clear existing configuration for this school
+        // Remove days not present in the request
         var existingDays = _context.SchoolWorkingDays.Where(d => d.SchoolId == request.SchoolId).ToList();
-        foreach (var day in existingDays)
+        var requestedDays = request.DayConfigs.Select(d => d.DayOfWeek).ToList();
+
+        var daysToRemove = existingDays.Where(d => !requestedDays.Contains(d.DayOfWeek)).ToList();
+        foreach (var day in daysToRemove)
         {
+            // Remove slots for the day being removed
+            var slotsToRemove = _context.LectureSlots.Where(s => s.SchoolId == day.SchoolId && s.DayOfWeek == day.DayOfWeek).ToList();
+            _context.LectureSlots.RemoveRange(slotsToRemove);
+
+            var breaksToRemove = _context.BreakSlots.Where(b => b.SchoolId == day.SchoolId && b.DayOfWeek == day.DayOfWeek).ToList();
+            _context.BreakSlots.RemoveRange(breaksToRemove);
+
             _context.SchoolWorkingDays.Remove(day);
         }
 
-        // Clear existing slots
-        var existingLectureSlots = _context.LectureSlots.Where(s => s.SchoolId == request.SchoolId).ToList();
-        foreach (var slot in existingLectureSlots)
-        {
-            _context.LectureSlots.Remove(slot);
-        }
-
-        var existingBreakSlots = _context.BreakSlots.Where(b => b.SchoolId == request.SchoolId).ToList();
-        foreach (var brk in existingBreakSlots)
-        {
-            _context.BreakSlots.Remove(brk);
-        }
-
-        // Add new configuration
+        // Reconcile each requested day
         foreach (var dayConfig in request.DayConfigs)
         {
-            var workingDay = new SchoolWorkingDay(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek);
-            _context.SchoolWorkingDays.Add(workingDay);
-
-            foreach (var slotConfig in dayConfig.LectureSlots ?? new List<SlotConfig>())
+            var workingDay = existingDays.FirstOrDefault(d => d.DayOfWeek == dayConfig.DayOfWeek);
+            if (workingDay == null)
             {
-                var slot = new LectureSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, slotConfig.SlotNumber, slotConfig.StartTime, slotConfig.EndTime);
-                _context.LectureSlots.Add(slot);
+                workingDay = new SchoolWorkingDay(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek);
+                _context.SchoolWorkingDays.Add(workingDay);
             }
 
-            foreach (var breakConfig in dayConfig.BreakSlots ?? new List<BreakConfig>())
+            // Reconcile Lecture Slots: if null, preserve; if empty or provided, replace
+            if (dayConfig.LectureSlots != null)
             {
-                var brk = new BreakSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, breakConfig.AfterSlotNumber, breakConfig.StartTime, breakConfig.EndTime);
-                _context.BreakSlots.Add(brk);
+                var existingSlots = _context.LectureSlots.Where(s => s.SchoolId == request.SchoolId && s.DayOfWeek == dayConfig.DayOfWeek).ToList();
+                _context.LectureSlots.RemoveRange(existingSlots);
+
+                foreach (var slotConfig in dayConfig.LectureSlots)
+                {
+                    var slot = new LectureSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, slotConfig.SlotNumber, slotConfig.StartTime, slotConfig.EndTime);
+                    _context.LectureSlots.Add(slot);
+                }
+            }
+
+            // Reconcile Break Slots: if null, preserve; if empty or provided, replace
+            if (dayConfig.BreakSlots != null)
+            {
+                var existingBreaks = _context.BreakSlots.Where(b => b.SchoolId == request.SchoolId && b.DayOfWeek == dayConfig.DayOfWeek).ToList();
+                _context.BreakSlots.RemoveRange(existingBreaks);
+
+                foreach (var breakConfig in dayConfig.BreakSlots)
+                {
+                    var brk = new BreakSlot(Guid.NewGuid(), request.SchoolId, dayConfig.DayOfWeek, breakConfig.AfterSlotNumber, breakConfig.StartTime, breakConfig.EndTime);
+                    _context.BreakSlots.Add(brk);
+                }
             }
         }
 

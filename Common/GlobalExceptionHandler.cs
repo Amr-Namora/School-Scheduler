@@ -28,6 +28,10 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         if (exception is ValidationException ve)
         {
+            // Log the specific validation failures to the console for debugging
+            var errorSummary = string.Join("; ", ve.Errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
+            _logger.LogWarning("Validation failed: {Errors}", errorSummary);
+
             httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
             await httpContext.Response.WriteAsJsonAsync(
                 new ValidationProblemDetails

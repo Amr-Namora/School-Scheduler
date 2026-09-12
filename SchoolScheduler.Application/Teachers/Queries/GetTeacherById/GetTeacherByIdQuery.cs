@@ -29,6 +29,6 @@ public class GetTeacherByIdQueryHandler : IRequestHandler<GetTeacherByIdQuery, T
             return null;
         }
 
-        return new TeacherDto(teacher.Id, teacher.SchoolId, teacher.DisplayName);
+        return new TeacherDto(teacher.Id, teacher.SchoolId, teacher.DisplayName, teacher.Email);
     }
 }
