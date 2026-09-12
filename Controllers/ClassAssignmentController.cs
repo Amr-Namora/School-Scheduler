@@ -6,6 +6,7 @@ using SchoolScheduler.Application.Assignments.Commands.BulkCreateClassSubjectAss
 using SchoolScheduler.Application.Assignments.Commands.DeleteClassSubjectAssignment;
 using SchoolScheduler.Application.Assignments.Commands.UpdateClassSubjectAssignment;
 using SchoolScheduler.Application.Assignments.Queries.GetAllAssignmentsForClassRoom;
+using SchoolScheduler.Application.Assignments.Queries.GetAllAssignments;
 using SchoolScheduler.Application.Common.Interfaces;
 using System;
 using System.Threading.Tasks;
@@ -61,6 +62,14 @@ public class ClassAssignmentController : ControllerBase
     public async Task<IActionResult> GetAssignmentsForClassRoom(Guid classRoomId)
     {
         var query = new GetAllAssignmentsForClassRoomQuery(classRoomId, _schoolContext.SchoolId.Value);
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAllAssignments()
+    {
+        var query = new GetAllAssignmentsQuery(_schoolContext.SchoolId.Value);
         var result = await _mediator.Send(query);
         return Ok(result);
     }
